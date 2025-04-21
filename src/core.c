@@ -103,30 +103,7 @@ void* b2Alloc( int size )
 	// https://en.cppreference.com/w/c/memory/aligned_alloc
 	int size32 = ( ( size - 1 ) | 0x1F ) + 1;
 
-	if ( b2_allocFcn != NULL )
-	{
-		void* ptr = b2_allocFcn( size32, B2_ALIGNMENT );
-		b2TracyCAlloc( ptr, size );
-
-		B2_ASSERT( ptr != NULL );
-		B2_ASSERT( ( (uintptr_t)ptr & 0x1F ) == 0 );
-
-		return ptr;
-	}
-
-#ifdef B2_PLATFORM_WINDOWS
-	void* ptr = _aligned_malloc( size32, B2_ALIGNMENT );
-#elif defined( B2_PLATFORM_ANDROID )
-	void* ptr = NULL;
-	if ( posix_memalign( &ptr, B2_ALIGNMENT, size32 ) != 0 )
-	{
-		// allocation failed, exit the application
-		exit( EXIT_FAILURE );
-	}
-#else
-	void* ptr = aligned_alloc( B2_ALIGNMENT, size32 );
-#endif
-
+	void* ptr = b2_allocFcn( size32, B2_ALIGNMENT );
 	b2TracyCAlloc( ptr, size );
 
 	B2_ASSERT( ptr != NULL );
@@ -144,18 +121,7 @@ void b2Free( void* mem, int size )
 
 	b2TracyCFree( mem );
 
-	if ( b2_freeFcn != NULL )
-	{
-		b2_freeFcn( mem );
-	}
-	else
-	{
-#ifdef B2_PLATFORM_WINDOWS
-		_aligned_free( mem );
-#else
-		free( mem );
-#endif
-	}
+	b2_freeFcn( mem );
 
 	b2AtomicFetchAddInt( &b2_byteCount, -size );
 }
